@@ -1,0 +1,38 @@
+#scroll-to-next-top-comment {
+  position: fixed;
+  bottom: 30px;
+  right: 30px;
+
+  width: 30px;
+  height: 30px;
+  border-radius: 30px;
+
+  background: #0079d3;
+  z-index: 10000000;
+  color: white;
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  box-shadow: rgba(0, 0, 0, 0.4) 3px 3px 5px 0px;
+}
+
+.chevron::before {
+  border-style: solid;
+  border-width: 2px 2px 0 0;
+  content: "";
+  display: block;
+  height: 6px;
+  width: 6px;
+  transform: rotate(135deg);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+.scrolled-comment {
+  background: rgba(36, 160, 237, 0.3) !important;
+  transition: all 1s ease;
+}
