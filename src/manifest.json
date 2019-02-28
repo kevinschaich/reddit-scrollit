@@ -1,6 +1,6 @@
 {
   "name": "Reddit Scrollit",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Adds the button from Reddit mobile to jump to the next top-level comment.",
   "permissions": ["activeTab"],
   "content_scripts": [
