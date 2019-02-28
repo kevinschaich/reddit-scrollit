@@ -3,7 +3,10 @@ const addButton = () => {
   button.id = "scroll-to-next-top-comment";
   button.innerHTML = '<span class="chevron top"></span>';
   button.onclick = handleButtonClick;
-  document.body.appendChild(button);
+
+  if (document.URL.includes("comments")) {
+    document.body.appendChild(button);
+  }
 };
 
 const handleButtonClick = () => {
@@ -15,7 +18,7 @@ const handleButtonClick = () => {
       comment.classList.add("scrolled-comment");
       setTimeout(() => {
         comment.classList.remove("scrolled-comment");
-      }, 2000);
+      }, 1000);
       return scrollToHeight(comment.top - 50);
     }
   }
@@ -49,3 +52,7 @@ const getTopLevelComments = () => {
 };
 
 addButton();
+
+chrome.tabs.onUpdated.addListener(function (tabId, changeInfo, tab) {
+  alert('updated from contentscript');
+});

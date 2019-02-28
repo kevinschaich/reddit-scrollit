@@ -1,14 +1,19 @@
 {
   "name": "Reddit Scrollit",
-  "version": "1.0",
+  "version": "0.0.1",
   "description": "Adds the button from Reddit mobile to scroll to the next top-level comment.",
-  "permissions": ["activeTab"],
+  "permissions": ["tabs"],
   "content_scripts": [
     {
       "matches": ["*://*.reddit.com/*"],
-      "js": ["reddit.js"],  
+      "js": ["reddit.js"],
       "css": ["reddit.css"]
     }
   ],
+  "icons": {
+    "16": "./icons/icon16.png",
+    "48": "./icons/icon48.png",
+    "128": "./icons/icon128.png"
+  },
   "manifest_version": 2
 }
