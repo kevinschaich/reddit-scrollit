@@ -36,14 +36,24 @@ var requestAnimFrame = (function() {
 })();
 
 function scrollTo(to, callback, duration) {
+  const overlayScrollContainer = document.body.querySelector("#overlayScrollContainer");
+
   // because it's so fucking difficult to detect the scrolling element, just move them all
   function move(amount) {
+    if (overlayScrollContainer) {
+      overlayScrollContainer.scrollTop = amount;
+    }
     document.documentElement.scrollTop = amount;
     document.body.parentNode.scrollTop = amount;
     document.body.scrollTop = amount;
   }
   function position() {
-    return document.documentElement.scrollTop || document.body.parentNode.scrollTop || document.body.scrollTop;
+    return (
+      // (overlayScrollContainer ? overlayScrollContainer.scrollTop : undefined) ||
+      document.documentElement.scrollTop ||
+      document.body.parentNode.scrollTop ||
+      document.body.scrollTop
+    );
   }
   var start = position(),
     change = to - start,
@@ -133,9 +143,12 @@ const handleButtonClick = (e, i = 0) => {
 };
 
 const getOffset = elem => {
+  const parentX = window.scrollX;
+  const parentY = window.scrollY;
+
   // offset the bounding box's position with the current page scroll position
   const rect = elem.getBoundingClientRect();
-  return { left: rect.left + window.scrollX, top: rect.top + window.scrollY };
+  return { left: rect.left + parentX, top: rect.top + parentY };
 };
 
 const refreshTopLevelComments = () => {
