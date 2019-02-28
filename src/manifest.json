@@ -1,8 +1,8 @@
 {
   "name": "Reddit Scrollit",
   "version": "0.0.1",
-  "description": "Adds the button from Reddit mobile to scroll to the next top-level comment.",
-  "permissions": ["tabs"],
+  "description": "Adds the button from Reddit mobile to jump to the next top-level comment.",
+  "permissions": ["activeTab"],
   "content_scripts": [
     {
       "matches": ["*://*.reddit.com/*"],
