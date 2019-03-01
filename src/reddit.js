@@ -1,91 +1,3 @@
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// start https://gist.github.com/james2doyle/5694700
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-// easing functions http://goo.gl/5HLl8
-Math.easeInOutQuad = function(t, b, c, d) {
-  t /= d / 2;
-  if (t < 1) {
-    return (c / 2) * t * t + b;
-  }
-  t--;
-  return (-c / 2) * (t * (t - 2) - 1) + b;
-};
-
-Math.easeInCubic = function(t, b, c, d) {
-  var tc = (t /= d) * t * t;
-  return b + c * tc;
-};
-
-Math.inOutQuintic = function(t, b, c, d) {
-  var ts = (t /= d) * t,
-    tc = ts * t;
-  return b + c * (6 * tc * ts + -15 * ts * ts + 10 * tc);
-};
-
-// requestAnimationFrame for Smart Animating http://goo.gl/sx5sts
-var requestAnimFrame = (function() {
-  return (
-    window.requestAnimationFrame ||
-    window.webkitRequestAnimationFrame ||
-    window.mozRequestAnimationFrame ||
-    function(callback) {
-      window.setTimeout(callback, 1000 / 60);
-    }
-  );
-})();
-
-function scrollTo(to, callback, duration) {
-  const overlayScrollContainer = document.body.querySelector("#overlayScrollContainer");
-
-  // because it's so fucking difficult to detect the scrolling element, just move them all
-  function move(amount) {
-    if (overlayScrollContainer) {
-      overlayScrollContainer.scrollTop = amount;
-    } else {
-      document.documentElement.scrollTop = amount;
-      document.body.parentNode.scrollTop = amount;
-      document.body.scrollTop = amount;
-    }
-  }
-  function position() {
-    return (
-      (overlayScrollContainer && overlayScrollContainer.scrollTop) ||
-      document.documentElement.scrollTop ||
-      document.body.parentNode.scrollTop ||
-      document.body.scrollTop
-    );
-  }
-  var start = position(),
-    change = to - start,
-    currentTime = 0,
-    increment = 20;
-
-  duration = typeof duration === "undefined" ? 500 : duration;
-  var animateScroll = function() {
-    // increment the time
-    currentTime += increment;
-    // find the value with the quadratic in-out easing function
-    var val = Math.easeInOutQuad(currentTime, start, change, duration);
-    // move the document.body
-    move(val);
-    // do the animation unless its over
-    if (currentTime < duration) {
-      requestAnimFrame(animateScroll);
-    } else {
-      if (callback && typeof callback === "function") {
-        // the animation is done so lets callback
-        callback();
-      }
-    }
-  };
-  animateScroll();
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// end https://gist.github.com/james2doyle/5694700
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 const removeButton = () => [...document.body.querySelectorAll("#scroll-to-next-top-comment")].forEach(e => e.remove());
 
 const addButton = () => {
@@ -113,24 +25,18 @@ const updateCommentStyling = comment => {
   }, 1000);
 };
 
-const handleButtonClick = () => {
-  // get the set of top-level comments on the page
-  refreshTopLevelComments();
-
+const scrollTo = pos => {
   const overlayScrollContainer = document.body.querySelector("#overlayScrollContainer");
-  const current = overlayScrollContainer ? overlayScrollContainer.scrollTop : window.scrollY;
-  const commentPaddingTop = overlayScrollContainer ? overlayScrollContainer.getBoundingClientRect().top + 60 : 60;
-  const threshold = 15;
 
-  // if we find a top-level comment that's below our current scroll position, scroll to it
-  for (comment of window.topLevelComments) {
-    if (comment.top > current + commentPaddingTop + threshold) {
-      console.log("SCROLLING");
-      return scrollTo(comment.top - commentPaddingTop, () => updateCommentStyling(comment));
-    }
+  // a modal is open from the homepage – handle offsets appropriately
+  if (overlayScrollContainer) {
+    overlayScrollContainer.scrollTo({ left: 0, top: pos || overlayScrollContainer.scrollHeight, behavior: "smooth" });
   }
 
-  return scrollTo((overlayScrollContainer && overlayScrollContainer.scrollHeight) || document.body.scrollHeight);
+  // otherwise, we're directly on a comments page and can just use document.body
+  else {
+    window.scrollTo({ left: 0, top: pos || document.body.scrollHeight, behavior: "smooth" });
+  }
 };
 
 const getOffset = elem => {
@@ -148,14 +54,42 @@ const refreshTopLevelComments = () => {
   const topLevelComments = [...document.body.querySelectorAll(".Comment.top-level")];
 
   // get the position of the comments & sort them
-  const comments = topLevelComments
-    .map(elem => {
-      return { top: getOffset(elem).top, classList: elem.classList };
-    })
-    .sort((a, b) => a.top - b.top);
+  let comments = topLevelComments.map(elem => {
+    return { top: getOffset(elem).top, classList: elem.classList };
+  });
+  comments.sort((a, b) => a.top - b.top);
 
   // store in window to save memory & persist between button clicks
   window.topLevelComments = comments;
+};
+
+const handleButtonClick = (e, retries = 0) => {
+  // setup constants & calculate current scroll position
+  const scrollThreshold = 15;
+  const overlayScrollContainer = document.body.querySelector("#overlayScrollContainer");
+  const commentPaddingTop = overlayScrollContainer ? overlayScrollContainer.getBoundingClientRect().top + 60 : 60;
+  const current = overlayScrollContainer ? overlayScrollContainer.scrollTop : window.scrollY;
+
+  // load comments if we haven't yet
+  if (window.topLevelComments == undefined) {
+    refreshTopLevelComments();
+  }
+
+  // an unviewed comment is below the current scroll position (plus padding and a little wiggle room)
+  const unviewedComments = window.topLevelComments.filter(
+    comment => comment.top > current + commentPaddingTop + scrollThreshold
+  );
+  const firstUnviewedComment = unviewedComments.length > 0 ? unviewedComments[0] : undefined;
+
+  // if we find a top-level comment that's below our current scroll position, scroll to it
+  if (firstUnviewedComment) {
+    const pos = firstUnviewedComment.top - commentPaddingTop;
+    updateCommentStyling(firstUnviewedComment);
+    return scrollTo(pos);
+  }
+
+  scrollTo();
+  return refreshTopLevelComments();
 };
 
 const observer = new MutationObserver(mutations => {
