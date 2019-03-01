@@ -42,14 +42,15 @@ function scrollTo(to, callback, duration) {
   function move(amount) {
     if (overlayScrollContainer) {
       overlayScrollContainer.scrollTop = amount;
+    } else {
+      document.documentElement.scrollTop = amount;
+      document.body.parentNode.scrollTop = amount;
+      document.body.scrollTop = amount;
     }
-    document.documentElement.scrollTop = amount;
-    document.body.parentNode.scrollTop = amount;
-    document.body.scrollTop = amount;
   }
   function position() {
     return (
-      // (overlayScrollContainer ? overlayScrollContainer.scrollTop : undefined) ||
+      (overlayScrollContainer && overlayScrollContainer.scrollTop) ||
       document.documentElement.scrollTop ||
       document.body.parentNode.scrollTop ||
       document.body.scrollTop
@@ -59,6 +60,7 @@ function scrollTo(to, callback, duration) {
     change = to - start,
     currentTime = 0,
     increment = 20;
+
   duration = typeof duration === "undefined" ? 500 : duration;
   var animateScroll = function() {
     // increment the time
@@ -87,19 +89,15 @@ function scrollTo(to, callback, duration) {
 const removeButton = () => [...document.body.querySelectorAll("#scroll-to-next-top-comment")].forEach(e => e.remove());
 
 const addButton = () => {
-  // set up our button
-  const button = document.createElement("BUTTON");
-  button.id = "scroll-to-next-top-comment";
-  button.onclick = handleButtonClick;
-  button.innerHTML = '<span class="chevron top"></span>';
-
   // only add the button on a post comments page (not the Reddit homepage)
   if (document.URL.includes("comments")) {
+    const button = document.createElement("BUTTON");
+    button.id = "scroll-to-next-top-comment";
+    button.onclick = handleButtonClick;
+    button.innerHTML = '<span class="chevron top"></span>';
     document.body.appendChild(button);
   }
 };
-
-const SCROLL_PADDING = 50;
 
 const updateCommentStyling = comment => {
   // get to a fresh page state
@@ -115,39 +113,34 @@ const updateCommentStyling = comment => {
   }, 1000);
 };
 
-const handleButtonClick = (e, i = 0) => {
-  // don't try more than 5 times (slow network connections, errors, etc.)
-  if (i < 5) {
-    // get the initial set of top-level comments on the page
-    if (!window.topLevelComments) {
-      refreshTopLevelComments();
+const handleButtonClick = () => {
+  // get the set of top-level comments on the page
+  refreshTopLevelComments();
+
+  const overlayScrollContainer = document.body.querySelector("#overlayScrollContainer");
+  const current = overlayScrollContainer ? overlayScrollContainer.scrollTop : window.scrollY;
+  const commentPaddingTop = overlayScrollContainer ? overlayScrollContainer.getBoundingClientRect().top + 60 : 60;
+  const threshold = 15;
+
+  // if we find a top-level comment that's below our current scroll position, scroll to it
+  for (comment of window.topLevelComments) {
+    if (comment.top > current + commentPaddingTop + threshold) {
+      console.log("SCROLLING");
+      return scrollTo(comment.top - commentPaddingTop, () => updateCommentStyling(comment));
     }
-    const current = window.scrollY;
-
-    // if we find a top-level comment that's below our current scroll position, scroll to it
-    for (comment of window.topLevelComments) {
-      if (comment.top - SCROLL_PADDING * 1.25 > current) {
-        return scrollTo(comment.top - SCROLL_PADDING, () => updateCommentStyling(comment), 250);
-      }
-    }
-
-    // if we haven't reached the next comment, scroll to the bottom to auto-reload more comments
-    scrollTo(document.body.scrollHeight, () => {}, 250);
-    refreshTopLevelComments();
-
-    // if we STILL haven't reached the next comment, wait a bit longer and try again
-    return setTimeout(() => {
-      handleButtonClick(e, i + 1);
-    }, (i + 1) * 500);
   }
+
+  return scrollTo((overlayScrollContainer && overlayScrollContainer.scrollHeight) || document.body.scrollHeight);
 };
 
 const getOffset = elem => {
-  const parentX = window.scrollX;
-  const parentY = window.scrollY;
+  const overlayScrollContainer = document.body.querySelector("#overlayScrollContainer");
+  const parentX = overlayScrollContainer ? overlayScrollContainer.scrollLeft : window.scrollX;
+  const parentY = overlayScrollContainer ? overlayScrollContainer.scrollTop : window.scrollY;
+
+  const rect = elem.getBoundingClientRect();
 
   // offset the bounding box's position with the current page scroll position
-  const rect = elem.getBoundingClientRect();
   return { left: rect.left + parentX, top: rect.top + parentY };
 };
 
