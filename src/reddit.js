@@ -59,24 +59,20 @@ const refreshTopLevelComments = () => {
   });
   comments.sort((a, b) => a.top - b.top);
 
-  // store in window to save memory & persist between button clicks
-  window.topLevelComments = comments;
+  return comments;
 };
 
-const handleButtonClick = (e, retries = 0) => {
+const handleButtonClick = () => {
   // setup constants & calculate current scroll position
   const scrollThreshold = 15;
   const overlayScrollContainer = document.body.querySelector("#overlayScrollContainer");
   const commentPaddingTop = overlayScrollContainer ? overlayScrollContainer.getBoundingClientRect().top + 60 : 60;
   const current = overlayScrollContainer ? overlayScrollContainer.scrollTop : window.scrollY;
 
-  // load comments if we haven't yet
-  if (window.topLevelComments == undefined) {
-    refreshTopLevelComments();
-  }
+  const comments = refreshTopLevelComments();
 
   // an unviewed comment is below the current scroll position (plus padding and a little wiggle room)
-  const unviewedComments = window.topLevelComments.filter(
+  const unviewedComments = comments.filter(
     comment => comment.top > current + commentPaddingTop + scrollThreshold
   );
   const firstUnviewedComment = unviewedComments.length > 0 ? unviewedComments[0] : undefined;
@@ -84,12 +80,11 @@ const handleButtonClick = (e, retries = 0) => {
   // if we find a top-level comment that's below our current scroll position, scroll to it
   if (firstUnviewedComment) {
     const pos = firstUnviewedComment.top - commentPaddingTop;
-    updateCommentStyling(firstUnviewedComment);
-    return scrollTo(pos);
+    scrollTo(pos);
+    return updateCommentStyling(firstUnviewedComment);
   }
 
   scrollTo();
-  return refreshTopLevelComments();
 };
 
 const observer = new MutationObserver(mutations => {
